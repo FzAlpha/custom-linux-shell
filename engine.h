@@ -4,4 +4,5 @@
 
 void looper();
 std::vector<std::string> tokenizer(std::string);
-void executeComand(std::vector<std::string> comands);
+void executeCommand(std::vector<std::string> comands);
+std::vector<char*> vectorConverter(const std::vector<std::string>& comands);

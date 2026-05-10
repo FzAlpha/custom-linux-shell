@@ -2,6 +2,7 @@
 #include<sstream>
 #include<unistd.h>
 #include<sys/wait.h>
+#include<cstring>
 #include "engine.h"
 
 
@@ -21,28 +22,52 @@ std::vector<std::string> tokenizer(std::string comand){
 void looper(){
     bool toStop = false;
     while(!toStop){
-        print("\n");
-        print("tuhin@Fz-Alpha-07:$ ");
+        print("\n")
+        print("tuhin@Fz-Alpha-07:$ ")
         std::string comand;
         std::getline(std::cin,comand);
-        if(comand == "exit"){toStop = true;}
+        if(comand == "exit"){
+            print("Hope you enjoyed it\n")
+            toStop = true;
+            break;
+        }
         std::vector<std::string> tokens (tokenizer(comand));
-       if(!tokens.empty()){executeComand(tokens);}
+       if(!tokens.empty()){executeCommand(tokens);}
     }
 }
 
 
-void executeComand(std::vector<std::string> comands){
+void executeCommand(std::vector<std::string> commands){
+    std::vector<char*> args = vectorConverter(commands);
     pid_t p = fork();
     if(p<0) {
-        print("error");
+        perror("Fork failed");
     }
     else if(p ==0) {
-        print("child process"<<getpid()<<std::endl);
-        exit(0);
+        // print("child process"<<getpid()<<std::endl);
+        if(execvp(args[0] , args.data()) == -1){
+            perror("execution failed");
+            exit(1);
+        }
+        
     }
     else {
-       print("parent process"<<getpid()<<std::endl);
+    //    print("parent process"<<getpid()<<std::endl);
        wait(NULL);
+       for(char* ptr : args){
+        free(ptr);
+       }
     }
+}
+
+std::vector<char*> vectorConverter(const std::vector<std::string>& comands){
+    std::vector<char*> ans;
+    ans.reserve(comands.size()+1);
+
+    for(const auto& a : comands){
+        ans.push_back(strdup(a.c_str()));
+    }
+    ans.push_back(nullptr);
+
+    return ans;
 }
