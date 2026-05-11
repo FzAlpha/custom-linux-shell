@@ -68,3 +68,33 @@ Phase 2 focused on transitioning the shell from a simple process-spawning tool t
 ## Next Phase Objectives: Level 4
 - Implement "Directory Navigation" by handling the `cd` (Change Directory) built-in command.
 - Transition from process-based execution to state-based execution for internal shell environment changes.
+# NovaShell: Development Log - Phase 3
+**Date:** May 12, 2026
+**Author:** Tuhin
+
+## Overview
+Phase 3 focused on expanding the shell's capabilities to handle state-altering commands. The primary objective was to design a "Gatekeeper" (Dispatcher) architecture that intercepts and natively executes shell built-in commands (like `cd` and `exit`) without relying on external binary execution or process spawning.
+
+## Architectural Implementation
+
+### 1. The Dispatcher Pattern (Gatekeeper Engine)
+- Restructured the execution flow to introduce an interception layer (`executeCustomDefinedFunctions`) before the `fork()` system call.
+- This ensures that built-in commands, which must mutate the Parent process's environment, are executed synchronously in the main thread, bypassing the OS process cloning mechanism entirely.
+
+### 2. Native Directory Navigation
+- Implemented the `cd` (Change Directory) built-in utilizing the POSIX `chdir()` system call.
+- Successfully routed environment state mutations directly to the Parent process, resolving the "Clone Trap" where directory changes were previously isolated to ephemeral child processes.
+
+## Technical Challenges & Resolutions
+
+### 1. The Pointer Comparison Trap
+- **Issue:** Encountered logical failures during command interception due to implicit pointer address comparisons (`char* == "string_literal"`).
+- **Resolution:** Refactored the command detection logic to enforce strict type-safe text comparison via explicit `std::string` casting (`std::string(args[0]) == "cd"`), ensuring robust command routing.
+
+### 2. Bypassed-Branch Memory Leaks
+- **Issue:** Identified a hidden memory leak within the dispatcher logic. Heap allocations created by `strdup()` for C-style execution were not being explicitly freed when the shell bypassed the `fork()` execution path for built-ins.
+- **Resolution:** Enforced symmetric memory deallocation by explicitly introducing a `free(ptr)` loop inside the `else` branch of the built-in execution block, maintaining a zero-leak memory profile across all execution branches.
+
+## Next Phase Objectives: Level 4.5
+- Implement a Dynamic Prompt UI.
+- Utilize the `getcwd()` system call to map and display the absolute working directory path natively within the REPL prompt loop, mirroring standard POSIX shell behavior.
