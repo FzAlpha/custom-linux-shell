@@ -3,6 +3,7 @@
 #include<unistd.h>
 #include<sys/wait.h>
 #include<cstring>
+#include<csignal>
 #include<limits.h>
 #include "engine.h"
 
@@ -22,9 +23,10 @@ std::vector<std::string> tokenizer(std::string comand){
 
 void looper(){
     bool toStop = false;
+    std::signal(SIGINT , signalShieldCntrlC);
     while(!toStop){
         print("\n")
-        print("tuhin@Fz-Alpha-07:$ ")
+        print("\033[32mtuhin@Fz-Alpha-07:\033[34m"<< printCurrentWorkingDirectory()<<"\033[33m$\033[0m ")
         std::string comand;
         std::getline(std::cin,comand);
         if(comand == "exit"){
@@ -41,6 +43,7 @@ void executeCommand(std::vector<std::string> commands){
     bool isUserDefined = isUserDefinedFunction(commands);
     std::vector<char*> args = vectorConverter(commands);
     if(!isUserDefined){
+        
         pid_t p = fork();
     
         if(p<0) {
@@ -48,6 +51,7 @@ void executeCommand(std::vector<std::string> commands){
         }
         else if(p ==0) {
            // print("child process"<<getpid()<<std::endl);
+           std::signal(SIGINT , SIG_DFL);
             
             if(execvp(args[0] , args.data()) == -1){
                 perror("execution failed");
@@ -151,4 +155,23 @@ void execute_cd_command(const std::vector<char*>& args){
     }
 
 
+}
+
+std::string printCurrentWorkingDirectory(){
+    char path[PATH_MAX];
+    if(getcwd(path ,sizeof(path)) != nullptr){
+        return path;
+    }else{
+        perror("directory error");
+        return "1";
+    }
+    return "0";
+}
+
+void signalShieldCntrlC(int signalNumber){
+    if(signalNumber == SIGINT){
+        print("\n")
+        print("\033[32mtuhin@Fz-Alpha-07:\033[34m"<< printCurrentWorkingDirectory()<<"\033[33m$\033[0m ")
+        std::cout.flush();
+    }
 }

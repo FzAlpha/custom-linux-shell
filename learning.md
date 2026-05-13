@@ -98,3 +98,53 @@ Phase 3 focused on expanding the shell's capabilities to handle state-altering c
 ## Next Phase Objectives: Level 4.5
 - Implement a Dynamic Prompt UI.
 - Utilize the `getcwd()` system call to map and display the absolute working directory path natively within the REPL prompt loop, mirroring standard POSIX shell behavior.
+# NovaShell Devlog - Advanced System Calls, Architecture & UI
+**Date:** May 14, 2026
+**Author:** Tuhin
+
+## 🎯 Objectives Achieved
+1. Fixed dynamic prompt path resolution bugs.
+2. Analyzed and integrated the internals of the `cd` command.
+3. Enhanced Terminal UI with ANSI Escape Codes.
+4. Engineered a Multi-Executable Bootloader Architecture.
+5. Implemented Signal Handling to create an "Immortal Shell".
+6. Configured OS-level GUI integration via Windows Terminal interoperability.
+
+---
+
+## 🧠 Key Learnings & Technical Deep Dive
+
+### 1. The C++ Function Pointer Trap & Buffer Sizes
+* **Bug:** The `getcwd()` function was failing and the shell was printing `1` instead of the path.
+* **Root Cause 1:** The `char path[PATH_MAX]` array was too small or undefined, leading to an `ERANGE` error in `getcwd`. Hardcoding standard Linux path limits (e.g., `4096` bytes) fixes this.
+* **Root Cause 2:** In C++, referencing a function without parentheses (e.g., `printCurrentWorkingDirectory` instead of `printCurrentWorkingDirectory()`) evaluates to the function's memory address pointer. When passed to a boolean or output stream, a non-null pointer evaluates to `1` (true).
+
+### 2. Anatomy of the `cd` (Change Directory) Command
+A professional `cd` implementation isn't just `chdir()`. It requires:
+* `getenv("HOME")`: To handle empty `cd` commands and route the user to their root directory.
+* `realpath()`: To resolve complex relative paths (e.g., `../../dir`) into clean, absolute paths.
+* `setenv("PWD", cwd, 1)`: To update the Operating System's environment variables so other processes know the shell's current location.
+
+### 3. Terminal Colors via ANSI Escape Codes
+Coloring terminal output doesn't require heavy GUI libraries. It is done via ANSI Escape Sequences:
+* Formula: `\033[<ColorCode>m`
+* Example: `\033[32m` (Green), `\033[34m` (Blue), `\033[36m` (Cyan).
+* **Crucial:** Always end with the reset code `\033[0m` to prevent color bleeding into the rest of the terminal session.
+
+### 4. Multi-Executable Architecture (Bootloader)
+Since a standard C++ application is a console app without its own GUI, I created a two-part architecture:
+* `novashell`: The core logic engine.
+* `start_nova`: A tiny C++ bootloader that uses `system()` to command the Host OS (Windows via WSLInterop) to open a new GUI terminal instance and execute the core engine inside it.
+* **Code:** `system("wt.exe -p \"Nova\" wsl.exe --exec ./novashell");`
+
+### 5. Signal Handling: The Immortal Shell (`SIGINT`)
+* By default, pressing `Ctrl+C` sends a `SIGINT` (Signal Interrupt) to the process, killing it.
+* Using the `<csignal>` library, I intercepted this OS-level death warrant.
+* **Implementation:** `std::signal(SIGINT, signalShieldCntrlC)` routes the interrupt to a custom handler. 
+* **Important Insight:** When intercepting signals during blocking calls like `std::getline`, the UI must be manually redrawn. The handler must print a newline, redraw the prompt, and forcefully flush the output buffer (`std::cout.flush()`) to maintain a seamless UX. Furthermore, child processes (`fork()`) inherit signal handlers, so they must be explicitly reset to `SIG_DFL` before `execvp()` to ensure foreground processes can still be terminated.
+
+---
+
+## 🚀 Next Steps
+* Implement I/O Redirection (`>` and `<`) using File Descriptors and `dup2()`.
+* Build an Alias Engine mapping using `std::unordered_map`.
