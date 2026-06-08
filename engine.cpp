@@ -5,6 +5,7 @@
 #include<cstring>
 #include<csignal>
 #include<limits.h>
+#include<fcntl.h>
 #include "engine.h"
 
 
@@ -40,6 +41,8 @@ void looper(){
 }
 
 void executeCommand(std::vector<std::string> commands){
+    std::string targetfile = "";
+    targetfile = extractRedirection(commands);
     bool isUserDefined = isUserDefinedFunction(commands);
     std::vector<char*> args = vectorConverter(commands);
     if(!isUserDefined){
@@ -52,6 +55,18 @@ void executeCommand(std::vector<std::string> commands){
         else if(p ==0) {
            // print("child process"<<getpid()<<std::endl);
            std::signal(SIGINT , SIG_DFL);
+           if(targetfile != ""){
+            int file_d= open(targetfile.c_str() ,O_WRONLY | O_CREAT | O_TRUNC , 0644);
+            if(file_d<0){
+                perror("novashell redirection error");
+
+                exit(1);
+            }
+            dup2(file_d ,1);
+            close(file_d);
+
+            
+           }
             
             if(execvp(args[0] , args.data()) == -1){
                 perror("execution failed");
@@ -174,4 +189,22 @@ void signalShieldCntrlC(int signalNumber){
         print("\033[32mtuhin@Fz-Alpha-07:\033[34m"<< printCurrentWorkingDirectory()<<"\033[33m$\033[0m ")
         std::cout.flush();
     }
+}
+
+std::string extractRedirection(std::vector<std::string>& commands){
+    
+    for(int i = 0;i<commands.size() ; i++){
+        if(commands[i] == ">"){
+            
+            if(i+1 < commands.size()){
+                std::string filename = commands[i+1];
+                commands.erase(commands.begin()+i, commands.begin() +i+2);
+                return filename;
+            }else{
+                std::cerr<<"synyax error unexpected file name after '>'\n";
+                return "";
+            }   
+        }
+    }
+    return "";
 }

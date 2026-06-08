@@ -11,3 +11,4 @@ bool isUserDefinedFunction(std::vector<std::string>& commands);
 void execute_cd_command(const std::vector<char*>& args);
 std::string printCurrentWorkingDirectory();
 void signalShieldCntrlC(int signalNumber);
+std::string extractRedirection(std::vector<std::string>& commands);

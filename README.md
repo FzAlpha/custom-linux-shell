@@ -17,9 +17,9 @@ The primary goal is to master the POSIX API, process management, and the core **
 
 ## ⚙️ Planned Features (Roadmap)
 - [x] **Level 1:** Core REPL loop (Read-Eval-Print Loop) and basic input parsing (Tokenizer).
-- [ ] **Level 2:** Execution of standard external binaries (e.g., `ls`, `pwd`, `mkdir`).
-- [ ] **Level 3:** Implementation of Built-in commands (e.g., `cd`, `exit`, `help`).
-- [ ] **Level 4:** Advanced mechanics like background process execution (`&`), custom prompt aesthetics, and signal handling (`Ctrl+C` interruption prevention).
+- [x] **Level 2:** Execution of standard external binaries (e.g., `ls`, `pwd`, `mkdir`).
+- [x] **Level 3:** Implementation of Built-in commands (e.g., `cd`, `exit`, `help`).
+- [x] **Level 4:** Advanced mechanics like background process execution (`&`), custom prompt aesthetics, and signal handling (`Ctrl+C` interruption prevention).
 
 ## 🛠️ Tech Stack
 *   **Language:** C++ (Modern C++ principles)
@@ -30,7 +30,8 @@ The primary goal is to master the POSIX API, process management, and the core **
 *(Instructions will be updated as the project progresses)*
 ```bash
 # Compile the source code
-g++ main.cpp -o novashell
+g++ -std=c++23 main.cpp engine.cpp -o novashell
+g++ boot.cpp -o start_nova
 
 # Execute the shell
-./novashell
+./start_nova

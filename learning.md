@@ -102,7 +102,7 @@ Phase 3 focused on expanding the shell's capabilities to handle state-altering c
 **Date:** May 14, 2026
 **Author:** Tuhin
 
-## 🎯 Objectives Achieved
+##  Objectives Achieved
 1. Fixed dynamic prompt path resolution bugs.
 2. Analyzed and integrated the internals of the `cd` command.
 3. Enhanced Terminal UI with ANSI Escape Codes.
@@ -112,7 +112,7 @@ Phase 3 focused on expanding the shell's capabilities to handle state-altering c
 
 ---
 
-## 🧠 Key Learnings & Technical Deep Dive
+##  Key Learnings & Technical Deep Dive
 
 ### 1. The C++ Function Pointer Trap & Buffer Sizes
 * **Bug:** The `getcwd()` function was failing and the shell was printing `1` instead of the path.
@@ -145,6 +145,32 @@ Since a standard C++ application is a console app without its own GUI, I created
 
 ---
 
-## 🚀 Next Steps
+##  Next Steps
 * Implement I/O Redirection (`>` and `<`) using File Descriptors and `dup2()`.
 * Build an Alias Engine mapping using `std::unordered_map`.
+# NovaShell Devlog: I/O Redirection & POSIX File Descriptors
+**Date:** June 8, 2026
+**Author:** Tuhin
+
+##  Objective
+Implemented standard output redirection (`>`) within the custom shell environment. This feature intercepts command execution output and routes it directly to user-defined files instead of the standard terminal display.
+
+##  Technical Implementation & Architecture
+
+### 1. POSIX System Calls & File Descriptors
+* **File Descriptor (FD) Hijacking:** Leveraged the core UNIX philosophy where FD `1` represents standard output (`stdout`).
+* **`open()` System Call:** Utilized `<fcntl.h>` to handle file creation and access cleanly. Applied the following bitwise flags:
+  * `O_WRONLY`: Ensures the file is opened for writing.
+  * `O_CREAT`: Instructs the OS to create the file if it does not exist.
+  * `O_TRUNC`: Clears the file contents if it already exists, preventing data appending issues.
+  * Permissions (`0644`): Grants read/write access to the owner.
+* **`dup2()` Magic:** Called `dup2(file_fd, 1)` strictly inside the child process (post-`fork()`) right before `execvp`. This seamlessly replaces the screen's output stream with the target file.
+* **Resource Management:** Ensured `close(file_fd)` is executed immediately after `dup2` to prevent file descriptor leaks.
+
+### 2. C++ Vector Manipulation & Command Sanitization
+* Built a modular `extractRedirection` helper function that processes the command vector by reference (`std::vector<std::string>&`).
+* **Sanitization (`std::vector::erase`):** The core command engine (`execvp`) cannot process redirection operators. The architecture safely extracts the target filename and then uses `.erase(begin + i, begin + i + 2)` to completely strip the `>` operator and the filename from the execution pipeline.
+
+### 3. Edge Cases & Bugs Mitigated
+* **State Persistence Trap:** Explicitly avoided using `static` variables inside the parsing loop to prevent the shell from caching old target filenames for subsequent, non-redirected commands.
+* **Segmentation Fault Prevention:** Implemented strict array boundary validations (`i + 1 < commands.size()`). If a user inputs an incomplete command like `ls >`, the shell intercepts the syntax error and halts execution gracefully rather than crashing due to an out-of-bounds index access.
