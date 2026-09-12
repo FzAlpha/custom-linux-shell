@@ -38,7 +38,7 @@
 ### Build & Run
 ```bash
 # Clone repository
-git clone https://github.com/your-username/custom-linux-shell.git
+git clone https://github.com/FzAlpha/custom-linux-shell.git
 cd custom-linux-shell
 
 # Compile NovaShell engine and bootloader
